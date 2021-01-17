@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "minefield",
+	"version": "${version}",
+	"name": "Minefield",
+	"description": "A mine avoidance minigame for Minecraft.",
+	"authors": [
+		"haykam821"
+	],
+	"contact": {
+		"homepage": "https://github.com/haykam821/Minefield#readme",
+		"issues": "https://github.com/haykam821/Minefield/issues"
+	},
+	"entrypoints": {
+		"main": [
+			"io.github.haykam821.minefield.Main"
+		]
+	},
+	"mixins": [
+		"minefield.mixin.json"
+	],
+	"license": "MIT",
+	"icon": "assets/minefield/icon.png",
+	"depends": {
+		"fabricloader": ">=0.4.0"
+	}
+}
