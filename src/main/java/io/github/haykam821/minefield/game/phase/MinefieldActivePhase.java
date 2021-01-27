@@ -1,5 +1,7 @@
 package io.github.haykam821.minefield.game.phase;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,6 +44,7 @@ public class MinefieldActivePhase {
 	private final MinefieldConfig config;
 	private final Set<ServerPlayerEntity> players;
 	private final Object2IntOpenHashMap<ServerPlayerEntity> explosions = new Object2IntOpenHashMap<>();
+	private final List<ServerPlayerEntity> resetPlayers = new ArrayList<>();
 	private int endTicks = -1;
 
 	public MinefieldActivePhase(GameSpace gameSpace, MinefieldMap map, MinefieldConfig config, Set<ServerPlayerEntity> players) {
@@ -104,7 +107,7 @@ public class MinefieldActivePhase {
 
 		for (ServerPlayerEntity player : this.players) {
 			if (this.map.isBelowPlatform(player)) {
-				this.map.spawn(player, this.gameSpace.getWorld());
+				this.map.spawn(player, this.world);
 			}
 
 			if (this.map.isAtEnd(player) && this.endTicks == -1) {
@@ -112,6 +115,12 @@ public class MinefieldActivePhase {
 				this.endTicks = this.config.getEndTicks();
 			}
 		}
+
+		// Reset players that stepped on a mine between now and the last tick
+		for (ServerPlayerEntity player : this.resetPlayers) {
+			this.map.spawn(player, this.world);
+		}
+		this.resetPlayers.clear();
 	}
 
 	private void setSpectator(PlayerEntity player) {
@@ -137,10 +146,10 @@ public class MinefieldActivePhase {
 		this.world.playSound(null, pos.up(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 1, 1);
 		this.world.spawnParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, 1, 0, 0, 0, 1);
 
-		Box box = new Box(pos).expand(1.5);
+		Box box = new Box(pos);
 		for (ServerPlayerEntity player : this.players) {
-			if (box.contains(player.getPos())) {
-				this.map.spawn(player, this.world);
+			if (box.intersects(player.getBoundingBox())) {
+				this.resetPlayers.add(player);
 			}
 		}
 
