@@ -24,6 +24,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
+import xyz.nucleoid.plasmid.entity.FloatingText;
 import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameLogic;
 import xyz.nucleoid.plasmid.game.GameSpace;
@@ -42,16 +43,19 @@ public class MinefieldActivePhase {
 	private final GameSpace gameSpace;
 	private final MinefieldMap map;
 	private final MinefieldConfig config;
+	private final FloatingText guideText;
 	private final Set<ServerPlayerEntity> players;
 	private final Object2IntOpenHashMap<ServerPlayerEntity> explosions = new Object2IntOpenHashMap<>();
 	private final List<ServerPlayerEntity> resetPlayers = new ArrayList<>();
 	private int endTicks = -1;
+	private int ticks = 0;
 
-	public MinefieldActivePhase(GameSpace gameSpace, MinefieldMap map, MinefieldConfig config, Set<ServerPlayerEntity> players) {
+	public MinefieldActivePhase(GameSpace gameSpace, MinefieldMap map, MinefieldConfig config, FloatingText guideText, Set<ServerPlayerEntity> players) {
 		this.world = gameSpace.getWorld();
 		this.gameSpace = gameSpace;
 		this.map = map;
 		this.config = config;
+		this.guideText = guideText;
 
 		this.players = players;
 		this.explosions.defaultReturnValue(0);
@@ -70,9 +74,9 @@ public class MinefieldActivePhase {
 		game.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);
 	}
 
-	public static void open(GameSpace gameSpace, MinefieldMap map, MinefieldConfig config) {
+	public static void open(GameSpace gameSpace, MinefieldMap map, MinefieldConfig config, FloatingText guideText) {
 		Set<ServerPlayerEntity> players = gameSpace.getPlayers().stream().collect(Collectors.toSet());
-		MinefieldActivePhase phase = new MinefieldActivePhase(gameSpace, map, config, players);
+		MinefieldActivePhase phase = new MinefieldActivePhase(gameSpace, map, config, guideText, players);
 
 		gameSpace.openGame(game -> {
 			MinefieldActivePhase.setRules(game);
@@ -95,6 +99,11 @@ public class MinefieldActivePhase {
 	}
 
 	private void tick() {
+		this.ticks += 1;
+		if (this.guideText != null && ticks == this.config.getGuideTicks()) {
+			this.guideText.remove();
+		}
+
 		// Delay between game end and game close
 		if (this.endTicks >= 0) {
 			if (this.endTicks == 0) {

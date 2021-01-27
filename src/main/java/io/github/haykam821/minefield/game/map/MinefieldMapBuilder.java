@@ -6,6 +6,7 @@ import io.github.haykam821.minefield.game.MinefieldConfig;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.plasmid.map.template.MapTemplate;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
@@ -31,6 +32,8 @@ public class MinefieldMapBuilder {
 		BlockBounds mines = new BlockBounds(new BlockPos(mapConfig.getPadding(), ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() + mapConfig.getX() - 1, ORIGIN_Y, maxZ));
 		BlockBounds end = new BlockBounds(new BlockPos(mapConfig.getPadding() + mapConfig.getX(), ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() * 2 + mapConfig.getX() - 1, ORIGIN_Y + 2, maxZ));
 
+		Vec3d guideTextPos = new Vec3d(mapConfig.getPadding() + 1, mines.getMin().getY() + 2.8, mines.getCenter().getZ());
+
 		// Place blocks in template
 		for (BlockPos pos : start) {
 			template.setBlockState(pos, START_FLOOR);
@@ -49,6 +52,6 @@ public class MinefieldMapBuilder {
 			}
 		}
 
-		return new MinefieldMap(template, start, end);
+		return new MinefieldMap(template, start, end, guideTextPos);
 	}
 }

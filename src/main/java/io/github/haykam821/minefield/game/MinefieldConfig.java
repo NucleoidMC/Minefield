@@ -11,6 +11,7 @@ public class MinefieldConfig {
 		return instance.group(
 			MinefieldMapConfig.CODEC.fieldOf("map").forGetter(MinefieldConfig::getMapConfig),
 			PlayerConfig.CODEC.fieldOf("players").forGetter(MinefieldConfig::getPlayerConfig),
+			Codec.INT.optionalFieldOf("guide_ticks", 20 * 30).forGetter(MinefieldConfig::getGuideTicks),
 			Codec.INT.optionalFieldOf("end_ticks", 20 * 5).forGetter(MinefieldConfig::getEndTicks),
 			Codec.BOOL.optionalFieldOf("remove_exploded_pressure_plates", true).forGetter(MinefieldConfig::shouldRemoveExplodedPressurePlates)
 		).apply(instance, MinefieldConfig::new);
@@ -18,12 +19,14 @@ public class MinefieldConfig {
 
 	private final MinefieldMapConfig mapConfig;
 	private final PlayerConfig playerConfig;
+	private final int guideTicks;
 	private final int endTicks;
 	private final boolean removeExplodedPressurePlates;
 
-	public MinefieldConfig(MinefieldMapConfig mapConfig, PlayerConfig playerConfig, int endTicks, boolean removeExplodedPressurePlates) {
+	public MinefieldConfig(MinefieldMapConfig mapConfig, PlayerConfig playerConfig, int guideTicks, int endTicks, boolean removeExplodedPressurePlates) {
 		this.mapConfig = mapConfig;
 		this.playerConfig = playerConfig;
+		this.guideTicks = guideTicks;
 		this.endTicks = endTicks;
 		this.removeExplodedPressurePlates = removeExplodedPressurePlates;
 	}
@@ -34,6 +37,10 @@ public class MinefieldConfig {
 
 	public PlayerConfig getPlayerConfig() {
 		return this.playerConfig;
+	}
+
+	public int getGuideTicks() {
+		return this.guideTicks;
 	}
 
 	public int getEndTicks() {

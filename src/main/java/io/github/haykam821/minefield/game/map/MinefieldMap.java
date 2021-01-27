@@ -13,11 +13,13 @@ public class MinefieldMap {
 	private final MapTemplate template;
 	private final Vec3d spawnPos;
 	private final BlockBounds end;
+	private final Vec3d guideTextPos;
 
-	public MinefieldMap(MapTemplate template, BlockBounds start, BlockBounds end) {
+	public MinefieldMap(MapTemplate template, BlockBounds start, BlockBounds end, Vec3d guideTextPos) {
 		this.template = template;
 		this.spawnPos = start.getCenterBottom().add(0, 1, 0);
 		this.end = end;
+		this.guideTextPos = guideTextPos;
 	}
 
 	public void spawn(ServerPlayerEntity player, ServerWorld world) {
@@ -30,6 +32,10 @@ public class MinefieldMap {
 
 	public boolean isBelowPlatform(ServerPlayerEntity player) {
 		return player.getY() < this.spawnPos.getY();
+	}
+
+	public Vec3d getGuideTextPos() {
+		return this.guideTextPos;
 	}
 
 	public ChunkGenerator createGenerator(MinecraftServer server) {
