@@ -7,8 +7,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import xyz.nucleoid.plasmid.map.template.MapTemplate;
-import xyz.nucleoid.plasmid.util.BlockBounds;
+import xyz.nucleoid.map_templates.BlockBounds;
+import xyz.nucleoid.map_templates.MapTemplate;
 
 public class MinefieldMapBuilder {
 	private static final int ORIGIN_Y = 64;
@@ -28,11 +28,11 @@ public class MinefieldMapBuilder {
 		MinefieldMapConfig mapConfig = this.config.getMapConfig();
 
 		int maxZ = mapConfig.getZ() - 1;
-		BlockBounds start = new BlockBounds(new BlockPos(0, ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() - 1, ORIGIN_Y, maxZ));
-		BlockBounds mines = new BlockBounds(new BlockPos(mapConfig.getPadding(), ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() + mapConfig.getX() - 1, ORIGIN_Y, maxZ));
-		BlockBounds end = new BlockBounds(new BlockPos(mapConfig.getPadding() + mapConfig.getX(), ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() * 2 + mapConfig.getX() - 1, ORIGIN_Y + 2, maxZ));
+		BlockBounds start = BlockBounds.of(new BlockPos(0, ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() - 1, ORIGIN_Y, maxZ));
+		BlockBounds mines = BlockBounds.of(new BlockPos(mapConfig.getPadding(), ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() + mapConfig.getX() - 1, ORIGIN_Y, maxZ));
+		BlockBounds end = BlockBounds.of(new BlockPos(mapConfig.getPadding() + mapConfig.getX(), ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() * 2 + mapConfig.getX() - 1, ORIGIN_Y + 2, maxZ));
 
-		Vec3d guideTextPos = new Vec3d(mapConfig.getPadding() + 1, mines.getMin().getY() + 2.8, mines.getCenter().getZ());
+		Vec3d guideTextPos = new Vec3d(mapConfig.getPadding() + 1, mines.min().getY() + 2.8, mines.center().getZ());
 
 		// Place blocks in template
 		for (BlockPos pos : start) {

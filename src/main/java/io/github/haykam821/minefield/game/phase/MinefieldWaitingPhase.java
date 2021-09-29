@@ -1,33 +1,31 @@
 package io.github.haykam821.minefield.game.phase;
 
+import eu.pb4.holograms.api.Holograms;
+import eu.pb4.holograms.api.holograms.AbstractHologram;
+import eu.pb4.holograms.api.holograms.AbstractHologram.VerticalAlign;
 import io.github.haykam821.minefield.game.MinefieldConfig;
 import io.github.haykam821.minefield.game.map.MinefieldMap;
 import io.github.haykam821.minefield.game.map.MinefieldMapBuilder;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.fantasy.BubbleWorldConfig;
-import xyz.nucleoid.plasmid.entity.FloatingText;
-import xyz.nucleoid.plasmid.entity.FloatingText.VerticalAlign;
+import xyz.nucleoid.fantasy.RuntimeWorldConfig;
 import xyz.nucleoid.plasmid.game.GameOpenContext;
 import xyz.nucleoid.plasmid.game.GameOpenProcedure;
+import xyz.nucleoid.plasmid.game.GameResult;
 import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.GameWaitingLobby;
-import xyz.nucleoid.plasmid.game.StartResult;
-import xyz.nucleoid.plasmid.game.config.PlayerConfig;
-import xyz.nucleoid.plasmid.game.event.GameOpenListener;
-import xyz.nucleoid.plasmid.game.event.GameTickListener;
-import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
-import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.RequestStartListener;
-import xyz.nucleoid.plasmid.game.player.JoinResult;
+import xyz.nucleoid.plasmid.game.common.GameWaitingLobby;
+import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
+import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.game.player.PlayerOffer;
+import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
+import xyz.nucleoid.stimuli.event.player.PlayerDamageEvent;
+import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class MinefieldWaitingPhase {
 	private static final Formatting GUIDE_FORMATTING = Formatting.GOLD;
@@ -39,75 +37,65 @@ public class MinefieldWaitingPhase {
 	};
 
 	private final GameSpace gameSpace;
+	private final ServerWorld world;
 	private final MinefieldMap map;
 	private final MinefieldConfig config;
-	private FloatingText guideText;
+	private AbstractHologram guideText;
 
-	public MinefieldWaitingPhase(GameSpace gameSpace, MinefieldMap map, MinefieldConfig config) {
+	public MinefieldWaitingPhase(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config) {
 		this.gameSpace = gameSpace;
+		this.world = world;
 		this.map = map;
 		this.config = config;
 	}
 
 	public static GameOpenProcedure open(GameOpenContext<MinefieldConfig> context) {
-		MinefieldMapBuilder mapBuilder = new MinefieldMapBuilder(context.getConfig());
+		MinefieldMapBuilder mapBuilder = new MinefieldMapBuilder(context.config());
 		MinefieldMap map = mapBuilder.create();
 
-		BubbleWorldConfig worldConfig = new BubbleWorldConfig()
-			.setGenerator(map.createGenerator(context.getServer()))
-			.setDefaultGameMode(GameMode.ADVENTURE);
+		RuntimeWorldConfig worldConfig = new RuntimeWorldConfig()
+			.setGenerator(map.createGenerator(context.server()));
 
-		return context.createOpenProcedure(worldConfig, game -> {
-			MinefieldWaitingPhase phase = new MinefieldWaitingPhase(game.getSpace(), map, context.getConfig());
-			GameWaitingLobby.applyTo(game, context.getConfig().getPlayerConfig());
+		return context.openWithWorld(worldConfig, (activity, world) -> {
+			MinefieldWaitingPhase phase = new MinefieldWaitingPhase(activity.getGameSpace(), world, map, context.config());
+			GameWaitingLobby.addTo(activity, context.config().getPlayerConfig());
 
-			MinefieldActivePhase.setRules(game);
+			MinefieldActivePhase.setRules(activity);
 
 			// Listeners
-			game.on(GameOpenListener.EVENT, phase::open);
-			game.on(GameTickListener.EVENT, phase::tick);
-			game.on(OfferPlayerListener.EVENT, phase::offerPlayer);
-			game.on(PlayerAddListener.EVENT, phase::addPlayer);
-			game.on(PlayerDamageListener.EVENT, phase::onPlayerDamage);
-			game.on(PlayerDeathListener.EVENT, phase::onPlayerDeath);
-			game.on(RequestStartListener.EVENT, phase::requestStart);
+			activity.listen(GameActivityEvents.ENABLE, phase::enable);
+			activity.listen(GameActivityEvents.TICK, phase::tick);
+			activity.listen(GamePlayerEvents.OFFER, phase::offerPlayer);
+			activity.listen(PlayerDamageEvent.EVENT, phase::onPlayerDamage);
+			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
+			activity.listen(GameActivityEvents.REQUEST_START, phase::requestStart);
 		});
 	}
 
-	private boolean isFull() {
-		return this.gameSpace.getPlayerCount() >= this.config.getPlayerConfig().getMaxPlayers();
-	}
-
-	private void open() {
+	private void enable() {
 		// Spawn guide text
-		this.gameSpace.getWorld().getChunk(new BlockPos(this.map.getGuideTextPos()));
-		this.guideText = FloatingText.spawn(this.gameSpace.getWorld(), this.map.getGuideTextPos(), GUIDE_LINES, VerticalAlign.CENTER);
+		this.guideText = Holograms.create(this.world, this.map.getGuideTextPos(), GUIDE_LINES);
+		this.guideText.setAlignment(VerticalAlign.CENTER);
+		this.guideText.show();
 	}
 
 	private void tick() {
 		for (ServerPlayerEntity player : this.gameSpace.getPlayers()) {
 			if (this.map.isBelowPlatform(player)) {
-				this.map.spawn(player, this.gameSpace.getWorld());
+				this.map.spawn(player, this.world);
 			}
 		}
 	}
 
-	private JoinResult offerPlayer(ServerPlayerEntity player) {
-		return this.isFull() ? JoinResult.gameFull() : JoinResult.ok();
+	private PlayerOfferResult offerPlayer(PlayerOffer offer) {
+		return offer.accept(this.world, this.map.getSpawnPos()).and(() -> {
+			offer.player().changeGameMode(GameMode.ADVENTURE);
+		});
 	}
 
-	private StartResult requestStart() {
-		PlayerConfig playerConfig = this.config.getPlayerConfig();
-		if (this.gameSpace.getPlayerCount() < playerConfig.getMinPlayers()) {
-			return StartResult.NOT_ENOUGH_PLAYERS;
-		}
-
-		MinefieldActivePhase.open(this.gameSpace, this.map, this.config, this.guideText);
-		return StartResult.OK;
-	}
-
-	private void addPlayer(ServerPlayerEntity player) {
-		this.map.spawn(player, this.gameSpace.getWorld());
+	private GameResult requestStart() {
+		MinefieldActivePhase.open(this.gameSpace, this.world, this.map, this.config, this.guideText);
+		return GameResult.ok();
 	}
 
 	private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
@@ -115,7 +103,7 @@ public class MinefieldWaitingPhase {
 	}
 
 	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-		this.map.spawn(player, this.gameSpace.getWorld());
+		this.map.spawn(player, this.world);
 		return ActionResult.FAIL;
 	}
 }

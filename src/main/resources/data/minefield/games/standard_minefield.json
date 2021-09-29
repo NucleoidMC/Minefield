@@ -1,6 +1,5 @@
 {
 	"type": "minefield:minefield",
-	"name": "Minefield",
 	"map": {
 		"x": 24,
 		"z": 24,

@@ -5,9 +5,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
-import xyz.nucleoid.plasmid.map.template.MapTemplate;
-import xyz.nucleoid.plasmid.map.template.TemplateChunkGenerator;
-import xyz.nucleoid.plasmid.util.BlockBounds;
+import xyz.nucleoid.map_templates.BlockBounds;
+import xyz.nucleoid.map_templates.MapTemplate;
+import xyz.nucleoid.plasmid.game.world.generator.TemplateChunkGenerator;
 
 public class MinefieldMap {
 	private final MapTemplate template;
@@ -17,9 +17,13 @@ public class MinefieldMap {
 
 	public MinefieldMap(MapTemplate template, BlockBounds start, BlockBounds end, Vec3d guideTextPos) {
 		this.template = template;
-		this.spawnPos = start.getCenterBottom().add(0, 1, 0);
+		this.spawnPos = start.centerBottom().add(0, 1, 0);
 		this.end = end;
 		this.guideTextPos = guideTextPos;
+	}
+
+	public Vec3d getSpawnPos() {
+		return this.spawnPos;
 	}
 
 	public void spawn(ServerPlayerEntity player, ServerWorld world) {

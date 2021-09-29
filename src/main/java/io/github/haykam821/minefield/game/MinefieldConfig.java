@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import io.github.haykam821.minefield.game.map.MinefieldMapConfig;
-import xyz.nucleoid.plasmid.game.config.PlayerConfig;
+import xyz.nucleoid.plasmid.game.common.config.PlayerConfig;
 
 public class MinefieldConfig {
 	public static final Codec<MinefieldConfig> CODEC = RecordCodecBuilder.create(instance -> {

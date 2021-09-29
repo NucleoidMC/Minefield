@@ -10,7 +10,7 @@ public class Main implements ModInitializer {
 	private static final String MOD_ID = "minefield";
 
 	private static final Identifier MINEFIELD_ID = new Identifier(MOD_ID, "minefield");
-	public static final GameType<MinefieldConfig> MINEFIELD_TYPE = GameType.register(MINEFIELD_ID, MinefieldWaitingPhase::open, MinefieldConfig.CODEC);
+	public static final GameType<MinefieldConfig> MINEFIELD_TYPE = GameType.register(MINEFIELD_ID, MinefieldConfig.CODEC, MinefieldWaitingPhase::open);
 
 	@Override
 	public void onInitialize() {

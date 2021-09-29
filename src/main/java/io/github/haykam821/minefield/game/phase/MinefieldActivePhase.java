@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import eu.pb4.holograms.api.holograms.AbstractHologram;
 import io.github.haykam821.minefield.game.MinefieldConfig;
-import io.github.haykam821.minefield.game.event.PressPressurePlateListener;
+import io.github.haykam821.minefield.game.event.PressPressurePlateEvent;
 import io.github.haykam821.minefield.game.map.MinefieldMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -24,17 +24,13 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.plasmid.entity.FloatingText;
+import xyz.nucleoid.plasmid.game.GameActivity;
 import xyz.nucleoid.plasmid.game.GameCloseReason;
-import xyz.nucleoid.plasmid.game.GameLogic;
 import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.event.GameOpenListener;
-import xyz.nucleoid.plasmid.game.event.GameTickListener;
-import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.PlayerRemoveListener;
-import xyz.nucleoid.plasmid.game.rule.GameRule;
-import xyz.nucleoid.plasmid.game.rule.RuleResult;
+import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
+import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.game.rule.GameRuleType;
+import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class MinefieldActivePhase {
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
@@ -43,15 +39,15 @@ public class MinefieldActivePhase {
 	private final GameSpace gameSpace;
 	private final MinefieldMap map;
 	private final MinefieldConfig config;
-	private final FloatingText guideText;
+	private final AbstractHologram guideText;
 	private final Set<ServerPlayerEntity> players;
 	private final Object2IntOpenHashMap<ServerPlayerEntity> explosions = new Object2IntOpenHashMap<>();
 	private final List<ServerPlayerEntity> resetPlayers = new ArrayList<>();
 	private int endTicks = -1;
 	private int ticks = 0;
 
-	public MinefieldActivePhase(GameSpace gameSpace, MinefieldMap map, MinefieldConfig config, FloatingText guideText, Set<ServerPlayerEntity> players) {
-		this.world = gameSpace.getWorld();
+	public MinefieldActivePhase(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config, AbstractHologram guideText, Set<ServerPlayerEntity> players) {
+		this.world = world;
 		this.gameSpace = gameSpace;
 		this.map = map;
 		this.config = config;
@@ -61,39 +57,39 @@ public class MinefieldActivePhase {
 		this.explosions.defaultReturnValue(0);
 	}
 
-	public static void setRules(GameLogic game) {
-		game.setRule(GameRule.BREAK_BLOCKS, RuleResult.DENY);
-		game.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
-		game.setRule(GameRule.CRAFTING, RuleResult.DENY);
-		game.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
-		game.setRule(GameRule.HUNGER, RuleResult.DENY);
-		game.setRule(GameRule.INTERACTION, RuleResult.DENY);
-		game.setRule(GameRule.PLACE_BLOCKS, RuleResult.DENY);
-		game.setRule(GameRule.PORTALS, RuleResult.DENY);
-		game.setRule(GameRule.PVP, RuleResult.DENY);
-		game.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);
+	public static void setRules(GameActivity activity) {
+		activity.deny(GameRuleType.BREAK_BLOCKS);
+		activity.deny(GameRuleType.BLOCK_DROPS);
+		activity.deny(GameRuleType.CRAFTING);
+		activity.deny(GameRuleType.FALL_DAMAGE);
+		activity.deny(GameRuleType.HUNGER);
+		activity.deny(GameRuleType.INTERACTION);
+		activity.deny(GameRuleType.PLACE_BLOCKS);
+		activity.deny(GameRuleType.PORTALS);
+		activity.deny(GameRuleType.PVP);
+		activity.deny(GameRuleType.THROW_ITEMS);
 	}
 
-	public static void open(GameSpace gameSpace, MinefieldMap map, MinefieldConfig config, FloatingText guideText) {
+	public static void open(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config, AbstractHologram guideText) {
 		Set<ServerPlayerEntity> players = gameSpace.getPlayers().stream().collect(Collectors.toSet());
-		MinefieldActivePhase phase = new MinefieldActivePhase(gameSpace, map, config, guideText, players);
+		MinefieldActivePhase phase = new MinefieldActivePhase(gameSpace, world, map, config, guideText, players);
 
-		gameSpace.openGame(game -> {
-			MinefieldActivePhase.setRules(game);
+		gameSpace.setActivity(activity -> {
+			MinefieldActivePhase.setRules(activity);
 
 			// Listeners
-			game.on(GameOpenListener.EVENT, phase::open);
-			game.on(GameTickListener.EVENT, phase::tick);
-			game.on(PlayerAddListener.EVENT, phase::addPlayer);
-			game.on(PlayerDeathListener.EVENT, phase::onPlayerDeath);
-			game.on(PlayerRemoveListener.EVENT, phase::removePlayer);
-			game.on(PressPressurePlateListener.EVENT, phase::onPressPressurePlate);
+			activity.listen(GameActivityEvents.ENABLE, phase::enable);
+			activity.listen(GameActivityEvents.TICK, phase::tick);
+			activity.listen(GamePlayerEvents.ADD, phase::addPlayer);
+			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
+			activity.listen(GamePlayerEvents.REMOVE, phase::removePlayer);
+			activity.listen(PressPressurePlateEvent.EVENT, phase::onPressPressurePlate);
 		});
 	}
 
-	private void open() {
+	private void enable() {
  		for (ServerPlayerEntity player : this.players) {
-			player.setGameMode(GameMode.ADVENTURE);
+			player.changeGameMode(GameMode.ADVENTURE);
 			this.map.spawn(player, this.world);
 		}
 	}
@@ -101,7 +97,7 @@ public class MinefieldActivePhase {
 	private void tick() {
 		this.ticks += 1;
 		if (this.guideText != null && ticks == this.config.getGuideTicks()) {
-			this.guideText.remove();
+			this.guideText.hide();
 		}
 
 		// Delay between game end and game close
@@ -132,8 +128,8 @@ public class MinefieldActivePhase {
 		this.resetPlayers.clear();
 	}
 
-	private void setSpectator(PlayerEntity player) {
-		player.setGameMode(GameMode.SPECTATOR);
+	private void setSpectator(ServerPlayerEntity player) {
+		player.changeGameMode(GameMode.SPECTATOR);
 	}
 
 	private void addPlayer(ServerPlayerEntity player) {

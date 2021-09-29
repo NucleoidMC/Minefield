@@ -1,4 +1,5 @@
 {
+	"game.minefield.standard_minefield": "Minefield",
 	"gameType.minefield.minefield": "Minefield",
 	"text.minefield.guide.avoid_mines": "Avoid the mines scattered along the way.",
 	"text.minefield.guide.mines_teleport_players": "Touching a mine will teleport you to the start!",
