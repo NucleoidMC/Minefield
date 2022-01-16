@@ -1,6 +1,8 @@
 {
 	"game.minefield.standard_minefield": "Minefield",
 	"gameType.minefield.minefield": "Minefield",
+	"statistic.bundle.minefield": "Minefield",
+	"statistic.minefield.mines_activated": "Mines activated",
 	"text.minefield.guide.avoid_mines": "Avoid the mines scattered along the way.",
 	"text.minefield.guide.mines_teleport_players": "Touching a mine will teleport you to the start!",
 	"text.minefield.guide.reach_the_other_side": "Reach the other side of the map!",

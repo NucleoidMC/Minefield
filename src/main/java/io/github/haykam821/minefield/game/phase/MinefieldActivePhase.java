@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.pb4.holograms.api.holograms.AbstractHologram;
+import io.github.haykam821.minefield.Main;
 import io.github.haykam821.minefield.game.MinefieldConfig;
 import io.github.haykam821.minefield.game.event.PressPressurePlateEvent;
 import io.github.haykam821.minefield.game.map.MinefieldMap;
@@ -32,6 +33,8 @@ import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
 import xyz.nucleoid.plasmid.game.player.PlayerOffer;
 import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
 import xyz.nucleoid.plasmid.game.rule.GameRuleType;
+import xyz.nucleoid.plasmid.game.stats.GameStatisticBundle;
+import xyz.nucleoid.plasmid.game.stats.StatisticKeys;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class MinefieldActivePhase {
@@ -45,6 +48,8 @@ public class MinefieldActivePhase {
 	private final Set<ServerPlayerEntity> players;
 	private final Object2IntOpenHashMap<ServerPlayerEntity> explosions = new Object2IntOpenHashMap<>();
 	private final List<ServerPlayerEntity> resetPlayers = new ArrayList<>();
+	private final GameStatisticBundle statistics;
+	private boolean singleplayer;
 	private int endTicks = -1;
 	private int ticks = 0;
 
@@ -57,6 +62,8 @@ public class MinefieldActivePhase {
 
 		this.players = players;
 		this.explosions.defaultReturnValue(0);
+
+		this.statistics = gameSpace.getStatistics().bundle(Main.MOD_ID);
 	}
 
 	public static void setRules(GameActivity activity) {
@@ -90,9 +97,15 @@ public class MinefieldActivePhase {
 	}
 
 	private void enable() {
+		this.singleplayer = this.players.size() == 1;
+
  		for (ServerPlayerEntity player : this.players) {
 			player.changeGameMode(GameMode.ADVENTURE);
 			this.map.spawn(player, this.world);
+
+			if (!this.singleplayer) {
+				this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_PLAYED, 1);
+			}
 		}
 	}
 
@@ -120,12 +133,27 @@ public class MinefieldActivePhase {
 			if (this.map.isAtEnd(player) && this.endTicks == -1) {
 				this.gameSpace.getPlayers().sendMessage(new TranslatableText("text.minefield.win", player.getDisplayName()).formatted(Formatting.GOLD));
 				this.endTicks = this.config.getEndTicks();
+
+				if (!this.singleplayer) {
+					this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_WON, 1);
+					this.statistics.forPlayer(player).set(StatisticKeys.QUICKEST_TIME, this.ticks);
+
+					for (ServerPlayerEntity statisticPlayer : this.players) {
+						if (player != statisticPlayer) {
+							this.statistics.forPlayer(statisticPlayer).increment(StatisticKeys.GAMES_LOST, 1);
+						}
+					}
+				}
 			}
 		}
 
 		// Reset players that stepped on a mine between now and the last tick
 		for (ServerPlayerEntity player : this.resetPlayers) {
 			this.map.spawn(player, this.world);
+
+			if (!this.singleplayer) {
+				this.statistics.forPlayer(player).increment(Main.MINES_ACTIVATED, 1);
+			}
 		}
 		this.resetPlayers.clear();
 	}
@@ -146,7 +174,9 @@ public class MinefieldActivePhase {
 	}
 
 	private void removePlayer(ServerPlayerEntity player) {
-		this.players.remove(player);
+		if (this.players.remove(player) && !this.singleplayer) {
+			this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_LOST, 1);
+		}
 	}
 
 	private void onPressPressurePlate(BlockPos pos) {
