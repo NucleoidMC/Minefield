@@ -10,7 +10,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.GameMode;
@@ -30,10 +29,10 @@ import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 public class MinefieldWaitingPhase {
 	private static final Formatting GUIDE_FORMATTING = Formatting.GOLD;
 	private static final Text[] GUIDE_LINES = {
-		new TranslatableText("gameType.minefield.minefield").formatted(GUIDE_FORMATTING).formatted(Formatting.BOLD),
-		new TranslatableText("text.minefield.guide.reach_the_other_side").formatted(GUIDE_FORMATTING),
-		new TranslatableText("text.minefield.guide.avoid_mines").formatted(GUIDE_FORMATTING),
-		new TranslatableText("text.minefield.guide.mines_teleport_players").formatted(GUIDE_FORMATTING)
+		Text.translatable("gameType.minefield.minefield").formatted(GUIDE_FORMATTING).formatted(Formatting.BOLD),
+		Text.translatable("text.minefield.guide.reach_the_other_side").formatted(GUIDE_FORMATTING),
+		Text.translatable("text.minefield.guide.avoid_mines").formatted(GUIDE_FORMATTING),
+		Text.translatable("text.minefield.guide.mines_teleport_players").formatted(GUIDE_FORMATTING)
 	};
 
 	private final GameSpace gameSpace;

@@ -19,7 +19,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
@@ -131,7 +131,7 @@ public class MinefieldActivePhase {
 			}
 
 			if (this.map.isAtEnd(player) && this.endTicks == -1) {
-				this.gameSpace.getPlayers().sendMessage(new TranslatableText("text.minefield.win", player.getDisplayName()).formatted(Formatting.GOLD));
+				this.gameSpace.getPlayers().sendMessage(Text.translatable("text.minefield.win", player.getDisplayName()).formatted(Formatting.GOLD));
 				this.endTicks = this.config.getEndTicks();
 
 				if (!this.singleplayer) {

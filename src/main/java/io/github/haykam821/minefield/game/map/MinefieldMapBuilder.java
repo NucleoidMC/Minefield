@@ -1,12 +1,11 @@
 package io.github.haykam821.minefield.game.map;
 
-import java.util.Random;
-
 import io.github.haykam821.minefield.game.MinefieldConfig;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.map_templates.MapTemplate;
 
@@ -44,7 +43,7 @@ public class MinefieldMapBuilder {
 			}
 		}
 
-		Random random = new Random();
+		Random random = Random.createLocal();
 		for (BlockPos pos : mines) {
 			template.setBlockState(pos, MINES_FLOOR);
 			if (random.nextDouble() < mapConfig.getMineChance()) {
