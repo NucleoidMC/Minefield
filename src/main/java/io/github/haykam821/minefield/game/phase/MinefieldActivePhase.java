@@ -63,7 +63,7 @@ public class MinefieldActivePhase {
 		this.players = players;
 		this.explosions.defaultReturnValue(0);
 
-		this.statistics = gameSpace.getStatistics().bundle(Main.MOD_ID);
+		this.statistics = config.getStatisticBundle(gameSpace);
 	}
 
 	public static void setRules(GameActivity activity) {
@@ -103,7 +103,7 @@ public class MinefieldActivePhase {
 			player.changeGameMode(GameMode.ADVENTURE);
 			this.map.spawn(player, this.world);
 
-			if (!this.singleplayer) {
+			if (!this.singleplayer && this.statistics != null) {
 				this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_PLAYED, 1);
 			}
 		}
@@ -134,7 +134,7 @@ public class MinefieldActivePhase {
 				this.gameSpace.getPlayers().sendMessage(Text.translatable("text.minefield.win", player.getDisplayName()).formatted(Formatting.GOLD));
 				this.endTicks = this.config.getEndTicks();
 
-				if (!this.singleplayer) {
+				if (!this.singleplayer && this.statistics != null) {
 					this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_WON, 1);
 					this.statistics.forPlayer(player).set(StatisticKeys.QUICKEST_TIME, this.ticks);
 
@@ -151,7 +151,7 @@ public class MinefieldActivePhase {
 		for (ServerPlayerEntity player : this.resetPlayers) {
 			this.map.spawn(player, this.world);
 
-			if (!this.singleplayer) {
+			if (!this.singleplayer && this.statistics != null) {
 				this.statistics.forPlayer(player).increment(Main.MINES_ACTIVATED, 1);
 			}
 		}
@@ -174,7 +174,7 @@ public class MinefieldActivePhase {
 	}
 
 	private void removePlayer(ServerPlayerEntity player) {
-		if (this.players.remove(player) && !this.singleplayer) {
+		if (this.players.remove(player) && !this.singleplayer && this.statistics != null) {
 			this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_LOST, 1);
 		}
 	}

@@ -10,5 +10,6 @@
 		"min": 1,
 		"max": 16,
 		"threshold": 4
-	}
+	},
+	"statistic_bundle_namespace": "minefield"
 }
