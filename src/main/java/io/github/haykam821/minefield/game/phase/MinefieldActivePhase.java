@@ -101,12 +101,13 @@ public class MinefieldActivePhase {
 
  		for (ServerPlayerEntity player : this.players) {
 			player.changeGameMode(GameMode.ADVENTURE);
-			this.map.spawn(player, this.world);
 
 			if (!this.singleplayer && this.statistics != null) {
 				this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_PLAYED, 1);
 			}
 		}
+
+		this.map.removeBarrierPerimeter(this.world);
 	}
 
 	private void tick() {

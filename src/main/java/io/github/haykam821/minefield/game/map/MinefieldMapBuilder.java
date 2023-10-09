@@ -15,11 +15,44 @@ public class MinefieldMapBuilder {
 	private static final BlockState MINES_FLOOR = Blocks.SANDSTONE.getDefaultState();
 	private static final BlockState MINE = Blocks.STONE_PRESSURE_PLATE.getDefaultState();
 	private static final BlockState END_FLOOR = Blocks.EMERALD_BLOCK.getDefaultState();
+	private static final BlockState BARRIER = Blocks.BARRIER.getDefaultState();
 
 	private final MinefieldConfig config;
 
 	public MinefieldMapBuilder(MinefieldConfig config) {
 		this.config = config;
+	}
+
+	private void placeBarrierPerimeter(MapTemplate template, BlockBounds start) {
+		BlockPos.Mutable pos = new BlockPos.Mutable();
+
+		pos.setY(start.min().getY() + 2);
+
+		int barrierMinX = start.min().getX() - 1;
+		int barrierMaxX = start.max().getX() + 1;
+
+		int barrierMinZ = start.min().getZ() - 1;
+		int barrierMaxZ = start.max().getZ() + 1;
+
+		for (int x = barrierMinX; x <= barrierMaxX; x += 1) {
+			pos.setX(x);
+
+			pos.setZ(barrierMinZ);
+			template.setBlockState(pos, BARRIER);
+
+			pos.setZ(barrierMaxZ);
+			template.setBlockState(pos, BARRIER);
+		}
+
+		for (int z = barrierMinZ + 1; z <= barrierMaxZ - 1; z += 1) {
+			pos.setZ(z);
+
+			pos.setX(barrierMinX);
+			template.setBlockState(pos, BARRIER);
+
+			pos.setX(barrierMaxX);
+			template.setBlockState(pos, BARRIER);
+		}
 	}
 
 	public MinefieldMap create() {
@@ -50,6 +83,8 @@ public class MinefieldMapBuilder {
 				template.setBlockState(pos.up(), MINE);
 			}
 		}
+
+		this.placeBarrierPerimeter(template, start);
 
 		return new MinefieldMap(template, start, end, guideTextPos);
 	}

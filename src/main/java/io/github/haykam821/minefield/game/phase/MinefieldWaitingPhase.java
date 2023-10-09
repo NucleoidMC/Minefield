@@ -80,7 +80,7 @@ public class MinefieldWaitingPhase {
 
 	private void tick() {
 		for (ServerPlayerEntity player : this.gameSpace.getPlayers()) {
-			if (this.map.isBelowPlatform(player)) {
+			if (!this.map.isInSpawn(player)) {
 				this.map.spawn(player, this.world);
 			}
 		}
