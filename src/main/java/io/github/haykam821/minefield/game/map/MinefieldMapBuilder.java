@@ -64,7 +64,7 @@ public class MinefieldMapBuilder {
 		BlockBounds mines = BlockBounds.of(new BlockPos(mapConfig.getPadding(), ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() + mapConfig.getX() - 1, ORIGIN_Y, maxZ));
 		BlockBounds end = BlockBounds.of(new BlockPos(mapConfig.getPadding() + mapConfig.getX(), ORIGIN_Y, 0), new BlockPos(mapConfig.getPadding() * 2 + mapConfig.getX() - 1, ORIGIN_Y + 2, maxZ));
 
-		Vec3d guideTextPos = new Vec3d(mapConfig.getPadding() + 1, mines.min().getY() + 2.8, mines.center().getZ());
+		Vec3d guideTextPos = new Vec3d(mapConfig.getPadding() + 1, mines.min().getY() + 2, mines.center().getZ());
 
 		// Place blocks in template
 		for (BlockPos pos : start) {

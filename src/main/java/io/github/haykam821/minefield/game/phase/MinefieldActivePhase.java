@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import eu.pb4.holograms.api.holograms.AbstractHologram;
+import eu.pb4.polymer.virtualentity.api.attachment.HolderAttachment;
 import io.github.haykam821.minefield.Main;
 import io.github.haykam821.minefield.game.MinefieldConfig;
 import io.github.haykam821.minefield.game.event.PressPressurePlateEvent;
@@ -44,7 +44,7 @@ public class MinefieldActivePhase {
 	private final GameSpace gameSpace;
 	private final MinefieldMap map;
 	private final MinefieldConfig config;
-	private final AbstractHologram guideText;
+	private final HolderAttachment guideText;
 	private final Set<ServerPlayerEntity> players;
 	private final Object2IntOpenHashMap<ServerPlayerEntity> explosions = new Object2IntOpenHashMap<>();
 	private final List<ServerPlayerEntity> resetPlayers = new ArrayList<>();
@@ -53,7 +53,7 @@ public class MinefieldActivePhase {
 	private int endTicks = -1;
 	private int ticks = 0;
 
-	public MinefieldActivePhase(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config, AbstractHologram guideText, Set<ServerPlayerEntity> players) {
+	public MinefieldActivePhase(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config, HolderAttachment guideText, Set<ServerPlayerEntity> players) {
 		this.world = world;
 		this.gameSpace = gameSpace;
 		this.map = map;
@@ -79,7 +79,7 @@ public class MinefieldActivePhase {
 		activity.deny(GameRuleType.THROW_ITEMS);
 	}
 
-	public static void open(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config, AbstractHologram guideText) {
+	public static void open(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config, HolderAttachment guideText) {
 		Set<ServerPlayerEntity> players = gameSpace.getPlayers().stream().collect(Collectors.toSet());
 		MinefieldActivePhase phase = new MinefieldActivePhase(gameSpace, world, map, config, guideText, players);
 
@@ -113,7 +113,7 @@ public class MinefieldActivePhase {
 	private void tick() {
 		this.ticks += 1;
 		if (this.guideText != null && ticks == this.config.getGuideTicks()) {
-			this.guideText.hide();
+			this.guideText.destroy();
 		}
 
 		// Delay between game end and game close
