@@ -26,7 +26,7 @@ public class MinefieldMap {
 	public MinefieldMap(MapTemplate template, BlockBounds start, BlockBounds end, Vec3d guideTextPos) {
 		this.template = template;
 		this.start = start;
-		this.spawnBox = new Box(start.min().add(0, 1, 0), start.max().add(1, 3, 1));
+		this.spawnBox = Box.enclosing(start.min().add(0, 1, 0), start.max().add(1, 3, 1));
 		this.spawnPos = start.centerBottom().add(0, 1, 0);
 		this.end = end;
 		this.guideTextPos = guideTextPos;
