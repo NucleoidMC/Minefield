@@ -2,40 +2,40 @@ package io.github.haykam821.minefield.game.map;
 
 import java.util.Set;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.map_templates.MapTemplate;
-import xyz.nucleoid.plasmid.api.game.world.generator.TemplateChunkGenerator;
+import xyz.nucleoid.plasmid.api.game.level.generator.TemplateChunkGenerator;
 
 public class MinefieldMap {
-	private static final BlockState AIR = Blocks.AIR.getDefaultState();
+	private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
 	private final MapTemplate template;
 	private final BlockBounds start;
-	private final Box spawnBox;
-	private final Vec3d spawnPos;
+	private final AABB spawnBox;
+	private final Vec3 spawnPos;
 	private final BlockBounds end;
-	private final Vec3d guideTextPos;
+	private final Vec3 guideTextPos;
 
-	public MinefieldMap(MapTemplate template, BlockBounds start, BlockBounds end, Vec3d guideTextPos) {
+	public MinefieldMap(MapTemplate template, BlockBounds start, BlockBounds end, Vec3 guideTextPos) {
 		this.template = template;
 		this.start = start;
-		this.spawnBox = Box.enclosing(start.min().add(0, 1, 0), start.max().add(1, 3, 1));
+		this.spawnBox = AABB.encapsulatingFullBlocks(start.min().offset(0, 1, 0), start.max().offset(1, 3, 1));
 		this.spawnPos = start.centerBottom().add(0, 1, 0);
 		this.end = end;
 		this.guideTextPos = guideTextPos;
 	}
 
-	public void removeBarrierPerimeter(ServerWorld world) {
-		BlockPos.Mutable pos = new BlockPos.Mutable();
+	public void removeBarrierPerimeter(ServerLevel world) {
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
 		pos.setY(this.start.min().getY() + 2);
 
@@ -49,44 +49,44 @@ public class MinefieldMap {
 			pos.setX(x);
 
 			pos.setZ(barrierMinZ);
-			world.setBlockState(pos, AIR);
+			world.setBlockAndUpdate(pos, AIR);
 
 			pos.setZ(barrierMaxZ);
-			world.setBlockState(pos, AIR);
+			world.setBlockAndUpdate(pos, AIR);
 		}
 
 		for (int z = barrierMinZ + 1; z <= barrierMaxZ - 1; z += 1) {
 			pos.setZ(z);
 
 			pos.setX(barrierMinX);
-			world.setBlockState(pos, AIR);
+			world.setBlockAndUpdate(pos, AIR);
 
 			pos.setX(barrierMaxX);
-			world.setBlockState(pos, AIR);
+			world.setBlockAndUpdate(pos, AIR);
 		}
 	}
 
-	public boolean isInSpawn(ServerPlayerEntity player) {
-		return this.spawnBox.contains(player.getPos());
+	public boolean isInSpawn(ServerPlayer player) {
+		return this.spawnBox.contains(player.position());
 	}
 
-	public Vec3d getSpawnPos() {
+	public Vec3 getSpawnPos() {
 		return this.spawnPos;
 	}
 
-	public void spawn(ServerPlayerEntity player, ServerWorld world) {
-		player.teleport(world, this.spawnPos.getX(), this.spawnPos.getY(), this.spawnPos.getZ(), Set.of(), -90, 0, true);
+	public void spawn(ServerPlayer player, ServerLevel level) {
+		player.teleportTo(level, this.spawnPos.x(), this.spawnPos.y(), this.spawnPos.z(), Set.of(), -90, 0, true);
 	}
 
-	public boolean isAtEnd(ServerPlayerEntity player) {
-		return this.end.contains(player.getBlockPos());
+	public boolean isAtEnd(ServerPlayer player) {
+		return this.end.contains(player.blockPosition());
 	}
 
-	public boolean isBelowPlatform(ServerPlayerEntity player) {
-		return player.getY() < this.spawnPos.getY();
+	public boolean isBelowPlatform(ServerPlayer player) {
+		return player.getY() < this.spawnPos.y();
 	}
 
-	public Vec3d getGuideTextPos() {
+	public Vec3 getGuideTextPos() {
 		return this.guideTextPos;
 	}
 

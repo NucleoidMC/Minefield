@@ -1,6 +1,6 @@
 package io.github.haykam821.minefield.game.event;
 
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 import xyz.nucleoid.stimuli.event.StimulusEvent;
 
 public interface PressPressurePlateEvent {

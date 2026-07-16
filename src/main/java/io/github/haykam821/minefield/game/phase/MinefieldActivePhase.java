@@ -11,19 +11,19 @@ import io.github.haykam821.minefield.game.MinefieldConfig;
 import io.github.haykam821.minefield.game.event.PressPressurePlateEvent;
 import io.github.haykam821.minefield.game.map.MinefieldMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.GameType;
 import xyz.nucleoid.plasmid.api.game.GameActivity;
 import xyz.nucleoid.plasmid.api.game.GameCloseReason;
 import xyz.nucleoid.plasmid.api.game.GameSpace;
@@ -39,23 +39,23 @@ import xyz.nucleoid.stimuli.event.EventResult;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class MinefieldActivePhase {
-	private static final BlockState AIR = Blocks.AIR.getDefaultState();
+	private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
-	private final ServerWorld world;
+	private final ServerLevel level;
 	private final GameSpace gameSpace;
 	private final MinefieldMap map;
 	private final MinefieldConfig config;
 	private final HolderAttachment guideText;
-	private final Set<ServerPlayerEntity> players;
-	private final Object2IntOpenHashMap<ServerPlayerEntity> explosions = new Object2IntOpenHashMap<>();
-	private final List<ServerPlayerEntity> resetPlayers = new ArrayList<>();
+	private final Set<ServerPlayer> players;
+	private final Object2IntOpenHashMap<ServerPlayer> explosions = new Object2IntOpenHashMap<>();
+	private final List<ServerPlayer> resetPlayers = new ArrayList<>();
 	private final GameStatisticBundle statistics;
 	private boolean singleplayer;
 	private int endTicks = -1;
 	private int ticks = 0;
 
-	public MinefieldActivePhase(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config, HolderAttachment guideText, Set<ServerPlayerEntity> players) {
-		this.world = world;
+	public MinefieldActivePhase(GameSpace gameSpace, ServerLevel level, MinefieldMap map, MinefieldConfig config, HolderAttachment guideText, Set<ServerPlayer> players) {
+		this.level = level;
 		this.gameSpace = gameSpace;
 		this.map = map;
 		this.config = config;
@@ -80,9 +80,9 @@ public class MinefieldActivePhase {
 		activity.deny(GameRuleType.THROW_ITEMS);
 	}
 
-	public static void open(GameSpace gameSpace, ServerWorld world, MinefieldMap map, MinefieldConfig config, HolderAttachment guideText) {
-		Set<ServerPlayerEntity> players = gameSpace.getPlayers().participants().stream().collect(Collectors.toSet());
-		MinefieldActivePhase phase = new MinefieldActivePhase(gameSpace, world, map, config, guideText, players);
+	public static void open(GameSpace gameSpace, ServerLevel level, MinefieldMap map, MinefieldConfig config, HolderAttachment guideText) {
+		Set<ServerPlayer> players = gameSpace.getPlayers().participants().stream().collect(Collectors.toSet());
+		MinefieldActivePhase phase = new MinefieldActivePhase(gameSpace, level, map, config, guideText, players);
 
 		gameSpace.setActivity(activity -> {
 			MinefieldActivePhase.setRules(activity);
@@ -101,20 +101,20 @@ public class MinefieldActivePhase {
 	private void enable() {
 		this.singleplayer = this.players.size() == 1;
 
- 		for (ServerPlayerEntity player : this.players) {
-			player.changeGameMode(GameMode.ADVENTURE);
+ 		for (ServerPlayer player : this.players) {
+			player.setGameMode(GameType.ADVENTURE);
 
 			if (!this.singleplayer && this.statistics != null) {
 				this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_PLAYED, 1);
 			}
 		}
 
-		for (ServerPlayerEntity player : this.gameSpace.getPlayers().spectators()) {
-			player.changeGameMode(GameMode.SPECTATOR);
-			this.map.spawn(player, this.world);
+		for (ServerPlayer player : this.gameSpace.getPlayers().spectators()) {
+			player.setGameMode(GameType.SPECTATOR);
+			this.map.spawn(player, this.level);
 		}
 
-		this.map.removeBarrierPerimeter(this.world);
+		this.map.removeBarrierPerimeter(this.level);
 	}
 
 	private void tick() {
@@ -133,20 +133,21 @@ public class MinefieldActivePhase {
 			return;
 		}
 
-		for (ServerPlayerEntity player : this.players) {
+		for (ServerPlayer player : this.players) {
 			if (this.map.isBelowPlatform(player)) {
-				this.map.spawn(player, this.world);
+				this.map.spawn(player, this.level);
 			}
 
 			if (this.map.isAtEnd(player) && this.endTicks == -1) {
-				this.gameSpace.getPlayers().sendMessage(Text.translatable("text.minefield.win", player.getDisplayName()).formatted(Formatting.GOLD));
+				this.gameSpace.getPlayers().sendMessage(Component.translatable("text.minefield.win", player.getDisplayName()).withStyle(ChatFormatting.GOLD));
 				this.endTicks = this.config.getEndTicks();
+				this.gameSpace.getPlayers().playSound(SoundEvents.PLAYER_LEVELUP, SoundSource.UI, 1, 1);
 
 				if (!this.singleplayer && this.statistics != null) {
 					this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_WON, 1);
 					this.statistics.forPlayer(player).set(StatisticKeys.QUICKEST_TIME, this.ticks);
 
-					for (ServerPlayerEntity statisticPlayer : this.players) {
+					for (ServerPlayer statisticPlayer : this.players) {
 						if (player != statisticPlayer) {
 							this.statistics.forPlayer(statisticPlayer).increment(StatisticKeys.GAMES_LOST, 1);
 						}
@@ -156,8 +157,8 @@ public class MinefieldActivePhase {
 		}
 
 		// Reset players that stepped on a mine between now and the last tick
-		for (ServerPlayerEntity player : this.resetPlayers) {
-			this.map.spawn(player, this.world);
+		for (ServerPlayer player : this.resetPlayers) {
+			this.map.spawn(player, this.level);
 
 			if (!this.singleplayer && this.statistics != null) {
 				this.statistics.forPlayer(player).increment(Main.MINES_ACTIVATED, 1);
@@ -166,40 +167,40 @@ public class MinefieldActivePhase {
 		this.resetPlayers.clear();
 	}
 
-	private void setSpectator(ServerPlayerEntity player) {
-		player.changeGameMode(GameMode.SPECTATOR);
+	private void setSpectator(ServerPlayer player) {
+		player.setGameMode(GameType.SPECTATOR);
 	}
 
 	private JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
-		return acceptor.teleport(this.world, this.map.getSpawnPos()).thenRunForEach(player -> {
+		return acceptor.teleport(this.level, this.map.getSpawnPos()).thenRunForEach(player -> {
 			this.setSpectator(player);
 		});
 	}
 
-	private EventResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-		this.map.spawn(player, this.world);
+	private EventResult onPlayerDeath(ServerPlayer player, DamageSource source) {
+		this.map.spawn(player, this.level);
 		return EventResult.DENY;
 	}
 
-	private void removePlayer(ServerPlayerEntity player) {
+	private void removePlayer(ServerPlayer player) {
 		if (this.players.remove(player) && !this.singleplayer && this.statistics != null) {
 			this.statistics.forPlayer(player).increment(StatisticKeys.GAMES_LOST, 1);
 		}
 	}
 
 	private void onPressPressurePlate(BlockPos pos) {
-		this.world.playSound(null, pos.up(), SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS, 1, 1);
-		this.world.spawnParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, 1, 0, 0, 0, 1);
+		this.level.playSound(null, pos.above(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 1, 1);
+		this.level.sendParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, 1, 0, 0, 0, 1);
 
-		Box box = new Box(pos);
-		for (ServerPlayerEntity player : this.players) {
+		AABB box = new AABB(pos);
+		for (ServerPlayer player : this.players) {
 			if (box.intersects(player.getBoundingBox())) {
 				this.resetPlayers.add(player);
 			}
 		}
 
 		if (this.config.shouldRemoveExplodedPressurePlates()) {
-			this.world.setBlockState(pos, AIR);
+			this.level.setBlockAndUpdate(pos, AIR);
 		}
 	}
 }
